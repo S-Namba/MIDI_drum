@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MIDIデバイスの名前を表示</title>
+</head>
+<body>
+    <h1>MIDIデバイスの名前を表示</h1>
+    <div id="deviceName"></div>
+    <button onclick="startDrum()">ドラムスタート</button>
+    <button onclick="stopDrum()">ドラムストップ</button>
+
+    <script>
+        let midiAccess;
+        let output;
+
+        // MIDIデバイスにアクセスする関数
+        function accessMidi() {
+            if (navigator.requestMIDIAccess) {
+                navigator.requestMIDIAccess()
+                    .then(function (access) {
+                        midiAccess = access;
+                        output = midiAccess.outputs.values().next().value;
+
+                        // MIDIデバイスの名前を取得して表示
+                        const devices = midiAccess.outputs.values();
+                        const deviceNameDiv = document.getElementById('deviceName');
+                        deviceNameDiv.textContent = "MIDIデバイス: ";
+                        for (let device of devices) {
+                            deviceNameDiv.textContent += device.name + " ";
+                        }
+                    })
+                    .catch(function (error) {
+                        console.error('MIDIデバイスにアクセスできません。', error);
+                    });
+            } else {
+                console.error('Web MIDI APIはサポートされていません。');
+            }
+        }
+
+        // MIDIノートオンメッセージを送信する関数
+        function playDrum(noteNumber) {
+            const NOTE_ON = 0x90; // MIDIノートオンメッセージのステータスバイト
+            const velocity = 127; // ノートオンの強さ（0から127）
+
+            output.send([NOTE_ON, noteNumber, velocity]);
+        }
+
+        // MIDIノートオフメッセージを送信する関数
+        function stopDrum(noteNumber) {
+            const NOTE_OFF = 0x80; // MIDIノートオフメッセージのステータスバイト
+            const velocity = 0;    // ノートオフの強さ（0から127）
+
+            output.send([NOTE_OFF, noteNumber, velocity]);
+        }
+
+        // ドラムを鳴らす関数
+        function startDrum() {
+            // 仮想ドラムのMIDIノートナンバー（各ドラムの音に対応する値）
+            const bassDrum = 36; // バスドラム
+            const snareDrum = 38; // スネアドラム
+            const closedHiHat = 42; // クローズドハイハット
+
+            // ドラムのパターン
+            const drumPattern = [
+                bassDrum, snareDrum, closedHiHat, snareDrum,
+                bassDrum, snareDrum, closedHiHat, snareDrum,
+            ];
+
+            // MIDIデバイスにアクセスする
+            accessMidi();
+
+            // ドラムのパターンを再生
+            let interval = 500; // ドラムパターンの再生間隔（ミリ秒）
+            let index = 0;
+
+            function playDrumPattern() {
+                const noteNumber = drumPattern[index];
+                playDrum(noteNumber);
+                index = (index + 1) % drumPattern.length;
+            }
+
+            playDrumPattern(); // 最初のドラムを鳴らす
+
+            // ドラムパターンを定期的に再生
+            setInterval(playDrumPattern, interval);
+        }
+
+        // ドラムを停止する関数
+        function stopDrum() {
+            // 停止する場合は何もしないか、必要に応じて実装
+        }
+    </script>
+</body>
+</html>
